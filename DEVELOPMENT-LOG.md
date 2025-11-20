@@ -364,3 +364,149 @@ kisekae-mirror-claude/
 - 全身: 肩から足首までの高さの1.2倍
 
 ---
+
+## 2025-11-20 - Vercelへのデプロイと公開
+
+### 実施内容
+アプリケーションをインターネット上に公開するため、Vercelを使用したデプロイを実施。
+
+### デプロイ準備
+
+#### 1. 個人情報チェック
+**実施内容:**
+- 全ファイルの内容を確認（HTML, JS, CSS, MD, JSON）
+- ユーザー名、パス情報、APIキーなどの個人情報が含まれていないことを確認
+- `package.json`の`author`フィールドも空欄で問題なし
+
+**結果:**
+- ✅ 個人情報は一切含まれていない
+- ✅ 全ファイルが安全に公開可能
+
+#### 2. .gitignoreの作成
+**除外対象:**
+```
+- node_modules/      # 依存パッケージ
+- dist/              # ビルド成果物
+- .claude/           # Claude Code個人設定
+- .DS_Store          # macOSシステムファイル
+- .vscode/, .idea/   # エディタ設定
+- *.log              # ログファイル
+- .env*              # 環境変数ファイル
+```
+
+#### 3. Gitリポジトリの初期化
+```bash
+git init
+git add -A
+git commit -m "Initial commit: KisekaeMirror - 着せ替え体験アプリ"
+```
+
+**コミット内容（11ファイル）:**
+- .gitignore
+- CLAUDE.md
+- DEVELOPMENT-LOG.md
+- KisekaeMirror.md
+- README.md
+- index.html
+- main-mediapipe.js
+- main.js
+- package-lock.json
+- package.json
+- style.css
+
+### GitHubへの公開
+
+#### リポジトリ作成
+**設定:**
+- リポジトリ名: `kisekae-mirror`
+- 公開設定: Public（Vercel無料プランで必要）
+- README/License: 追加なし（ローカルに既存）
+
+#### プッシュ
+```bash
+git remote add origin git@github.com:Developlayer/kisekae-mirror.git
+git branch -M main
+git push -u origin main
+```
+
+**リポジトリURL:**
+https://github.com/Developlayer/kisekae-mirror
+
+### Vercelへのデプロイ
+
+#### 技術選定の理由
+- **完全無料**: クレジットカード登録不要
+- **自動ビルド**: Viteプロジェクトを自動認識
+- **HTTPS対応**: カメラ使用に必須
+- **設定不要**: GitHubと連携するだけ
+
+#### デプロイ手順
+1. Vercelアカウント作成（GitHubアカウントで連携）
+2. GitHubリポジトリをインポート
+3. ビルド設定（自動検出）:
+   - Framework: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. デプロイ実行
+
+#### 結果
+- ✅ デプロイ成功
+- ✅ 自動HTTPS対応
+- ✅ 世界中からアクセス可能
+
+### 課金防止対策
+
+**実施した安全設定:**
+1. Vercel Hobbyプラン（無料）を使用
+2. クレジットカード未登録（物理的に課金不可）
+3. 有料機能の回避:
+   - Edge Functions未使用
+   - Analytics有料版未使用
+   - チーム機能未使用
+
+**無料枠の範囲:**
+- 100 GB 帯域幅/月
+- 無制限のデプロイ数
+- 6,000分のビルド時間/月
+- 静的サイトなので十分に収まる範囲
+
+### 今後の更新方法
+
+コードを修正した場合:
+```bash
+git add .
+git commit -m "修正内容"
+git push
+```
+→ Vercelが自動で再デプロイ（1〜2分）
+
+### 完成したプロジェクト構成
+
+**公開されているファイル（GitHub）:**
+- HTML/CSS/JavaScriptファイル
+- ドキュメント（README, CLAUDE.md等）
+- package.json（依存関係）
+
+**除外されているファイル（.gitignore）:**
+- node_modules/（依存パッケージ）
+- .claude/（個人設定）
+- dist/（ビルド成果物、Vercelが自動生成）
+
+### 技術スタック（最終版）
+
+**開発環境:**
+- HTML + Vanilla JavaScript
+- MediaPipe Pose（@mediapipe/tasks-vision）
+- Canvas API
+- Vite（開発サーバー・ビルド）
+
+**ホスティング:**
+- GitHub（ソースコード管理）
+- Vercel（本番環境）
+
+**特徴:**
+- フレームワーク不使用（軽量・シンプル）
+- サーバーレス（静的サイト）
+- 完全無料で運用可能
+
+---

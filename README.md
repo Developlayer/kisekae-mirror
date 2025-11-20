@@ -2,6 +2,9 @@
 
 Webカメラで人物を認識し、服のイラストをリアルタイムで重ねて表示する着せ替えアプリです。
 
+**🌐 デモサイト**: デプロイ済み（Vercel上で公開中）
+**📦 GitHubリポジトリ**: [https://github.com/Developlayer/kisekae-mirror](https://github.com/Developlayer/kisekae-mirror)
+
 ## 主な機能
 
 - 📷 **Webカメラ対応** - リアルタイム映像取得
