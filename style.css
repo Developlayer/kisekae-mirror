@@ -1,0 +1,412 @@
+/* リセット */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ヘッダー */
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 5px;
+}
+
+header p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* メインコンテンツ */
+main {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* カメラエリア */
+#camera-container {
+  flex: 1;
+  position: relative;
+  background-color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  min-height: 500px;
+}
+
+#camera-video {
+  display: none; /* Canvasに描画するので非表示 */
+}
+
+#output-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* コントロールパネル */
+#control-panel {
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#control-panel section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#control-panel h2 {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #667eea;
+}
+
+#control-panel h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+/* ドラッグ&ドロップエリア */
+#drop-zone {
+  border: 3px dashed #667eea;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+#drop-zone:hover,
+#drop-zone.drag-over {
+  background-color: #f0f4ff;
+  border-color: #764ba2;
+}
+
+#drop-zone p {
+  margin: 10px 0;
+  color: #666;
+}
+
+#file-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+#file-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* トリミング編集 */
+#trim-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+#trim-container {
+  position: relative;
+  margin: 15px 0;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#trim-canvas {
+  max-width: 100%;
+  max-height: 300px;
+  cursor: crosshair;
+  display: block;
+}
+
+#trim-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#trim-controls button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+#trim-reset {
+  background-color: #6c757d;
+  color: white;
+}
+
+#trim-reset:hover {
+  background-color: #5a6268;
+}
+
+#trim-confirm {
+  background-color: #28a745;
+  color: white;
+}
+
+#trim-confirm:hover {
+  background-color: #218838;
+}
+
+#trim-skip {
+  background-color: #667eea;
+  color: white;
+}
+
+#trim-skip:hover {
+  background-color: #5568d3;
+}
+
+/* 分類選択 */
+#category-selection {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+#category-selection label {
+  display: block;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+#category-selection input[type="radio"] {
+  margin-right: 8px;
+}
+
+#category-confirm {
+  margin-top: 15px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  width: 100%;
+}
+
+#category-confirm:hover {
+  background-color: #218838;
+}
+
+/* サイズ調整 */
+#size-adjust-section {
+  padding: 15px;
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+}
+
+#size-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.size-control {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.size-control label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.size-control input[type="range"] {
+  width: 100%;
+  cursor: pointer;
+}
+
+#reset-size {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#reset-size:hover {
+  background-color: #5a6268;
+}
+
+/* デバッグモード */
+#debug-section {
+  padding: 15px;
+}
+
+#debug-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+#debug-toggle:hover {
+  background-color: #f0f4ff;
+}
+
+#debug-toggle input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* 重ね順設定 */
+#layer-order-section {
+  padding: 15px;
+}
+
+#layer-order-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#layer-order-controls label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+#layer-order-controls label:hover {
+  background-color: #f0f4ff;
+}
+
+#layer-order-controls input[type="radio"] {
+  margin-right: 8px;
+}
+
+/* 服のリスト */
+#clothes-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.clothes-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  min-height: 50px;
+}
+
+.clothes-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clothes-item:hover {
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.clothes-item.active {
+  border-color: #28a745;
+  border-width: 3px;
+}
+
+.clothes-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.clothes-item .remove-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ステータス表示 */
+#status {
+  background-color: #fff;
+  padding: 10px 20px;
+  text-align: center;
+  border-top: 1px solid #ddd;
+}
+
+#status-text {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 1024px) {
+  main {
+    flex-direction: column;
+  }
+
+  #control-panel {
+    width: 100%;
+  }
+}
