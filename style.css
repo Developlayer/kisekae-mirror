@@ -345,16 +345,18 @@ main {
 
 /* 服のリスト */
 #clothes-list {
-  max-height: 250px;
-  overflow-y: auto;
+  /* 横スクロール表示に変更 */
 }
 
 .clothes-items {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-top: 8px;
-  min-height: 40px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  min-height: 68px;
 }
 
 .clothes-item {
@@ -366,6 +368,7 @@ main {
   overflow: hidden;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .clothes-item:hover {
