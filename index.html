@@ -16,10 +16,22 @@
 
     <!-- メインコンテンツ -->
     <main>
-      <!-- カメラ映像エリア -->
-      <div id="camera-container">
-        <video id="camera-video" autoplay playsinline></video>
-        <canvas id="output-canvas"></canvas>
+      <!-- 左側エリア（カメラ + 表示設定） -->
+      <div id="left-area">
+        <!-- カメラ映像エリア -->
+        <div id="camera-container">
+          <video id="camera-video" autoplay playsinline></video>
+          <canvas id="output-canvas"></canvas>
+        </div>
+
+        <!-- 表示設定 -->
+        <section id="debug-section">
+          <h2>表示設定</h2>
+          <label id="debug-toggle">
+            <input type="checkbox" id="debug-mode">
+            デバッグモード（骨格を表示）
+          </label>
+        </section>
       </div>
 
       <!-- コントロールパネル -->
@@ -74,15 +86,6 @@
             </div>
             <button id="reset-size">リセット</button>
           </div>
-        </section>
-
-        <!-- デバッグモード -->
-        <section id="debug-section">
-          <h2>表示設定</h2>
-          <label id="debug-toggle">
-            <input type="checkbox" id="debug-mode">
-            デバッグモード（骨格を表示）
-          </label>
         </section>
 
         <!-- 重ね順設定 -->
