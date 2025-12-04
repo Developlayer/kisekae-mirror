@@ -30,6 +30,9 @@ let layerOrder = 'upper-on-top';
 // デバッグモード
 let debugMode = false;
 
+// 現在選択中のサイズ調整タブ
+let currentSizeTab = 'upper';
+
 // 一時的に読み込んだ画像
 let tempImage = null;
 
@@ -126,6 +129,28 @@ function initializeEventListeners() {
     console.log('デバッグモード:', debugMode ? 'ON' : 'OFF');
   });
 
+  // サイズ調整タブの切り替え
+  document.querySelectorAll('.size-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const category = tab.dataset.category;
+
+      // 着用していない服のタブはクリックできない
+      if (!activeClothes[category]) {
+        return;
+      }
+
+      // タブを切り替え
+      currentSizeTab = category;
+
+      // タブのアクティブ状態を更新
+      document.querySelectorAll('.size-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // スライダーの値を更新
+      updateSizeSliders();
+    });
+  });
+
   // 縦横比固定チェックボックス
   document.getElementById('lock-aspect-ratio').addEventListener('change', (e) => {
     const isLocked = e.target.checked;
@@ -152,9 +177,9 @@ function initializeEventListeners() {
     const value = parseInt(e.target.value);
     document.getElementById('unified-value').textContent = value + '%';
     const scale = value / 100;
-    // 縦横両方に同じスケールを適用
-    updateActiveClothScale('width', scale);
-    updateActiveClothScale('height', scale);
+    // 現在のタブのカテゴリの縦横両方に同じスケールを適用
+    updateClothScale(currentSizeTab, 'width', scale);
+    updateClothScale(currentSizeTab, 'height', scale);
     // 個別スライダーの値も同期
     document.getElementById('width-scale').value = value;
     document.getElementById('height-scale').value = value;
@@ -166,13 +191,13 @@ function initializeEventListeners() {
   document.getElementById('width-scale').addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
     document.getElementById('width-value').textContent = value + '%';
-    updateActiveClothScale('width', value / 100);
+    updateClothScale(currentSizeTab, 'width', value / 100);
   });
 
   document.getElementById('height-scale').addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
     document.getElementById('height-value').textContent = value + '%';
-    updateActiveClothScale('height', value / 100);
+    updateClothScale(currentSizeTab, 'height', value / 100);
   });
 
   document.getElementById('reset-size').addEventListener('click', () => {
@@ -184,13 +209,24 @@ function initializeEventListeners() {
     document.getElementById('height-scale').value = 100;
     document.getElementById('width-value').textContent = '100%';
     document.getElementById('height-value').textContent = '100%';
-    // スケールを適用
-    updateActiveClothScale('width', 1.0);
-    updateActiveClothScale('height', 1.0);
+    // 現在のタブのカテゴリのスケールを適用
+    updateClothScale(currentSizeTab, 'width', 1.0);
+    updateClothScale(currentSizeTab, 'height', 1.0);
   });
 }
 
-// 選択中の服のスケールを更新
+// 特定のカテゴリの服のスケールを更新
+function updateClothScale(category, dimension, scale) {
+  if (activeClothes[category]) {
+    if (dimension === 'width') {
+      activeClothes[category].widthScale = scale;
+    } else if (dimension === 'height') {
+      activeClothes[category].heightScale = scale;
+    }
+  }
+}
+
+// 選択中の服のスケールを更新（旧関数、互換性のため残す）
 function updateActiveClothScale(dimension, scale) {
   ['upper', 'lower', 'full'].forEach(category => {
     if (activeClothes[category]) {
@@ -608,32 +644,69 @@ function updateClothesUI() {
       if (item) {
         item.classList.add('active');
         hasActiveCloth = true;
-        activeClothName = getCategoryName(category);
-
-        // サイズ調整スライダーの値を更新
-        const widthPercent = Math.round(activeClothes[category].widthScale * 100);
-        const heightPercent = Math.round(activeClothes[category].heightScale * 100);
-
-        // 個別スライダーの値を更新
-        document.getElementById('width-scale').value = widthPercent;
-        document.getElementById('height-scale').value = heightPercent;
-        document.getElementById('width-value').textContent = widthPercent + '%';
-        document.getElementById('height-value').textContent = heightPercent + '%';
-
-        // 全体スケールスライダーの値も更新（横幅の値を使用）
-        document.getElementById('unified-scale').value = widthPercent;
-        document.getElementById('unified-value').textContent = widthPercent + '%';
       }
     }
   });
 
-  // サイズ調整セクションの表示/非表示
+  // サイズ調整セクションの表示/非表示とタブの更新
   const sizeAdjustSection = document.getElementById('size-adjust-section');
   if (hasActiveCloth) {
     sizeAdjustSection.style.display = 'block';
-    document.getElementById('adjusting-cloth-name').textContent = `${activeClothName}の服を調整中`;
+
+    // タブの有効/無効を更新
+    document.querySelectorAll('.size-tab').forEach(tab => {
+      const category = tab.dataset.category;
+      if (activeClothes[category]) {
+        tab.disabled = false;
+      } else {
+        tab.disabled = true;
+        tab.classList.remove('active');
+      }
+    });
+
+    // 現在のタブが無効な服の場合、有効な服のタブに切り替え
+    if (!activeClothes[currentSizeTab]) {
+      // 有効なタブを探す
+      if (activeClothes.upper) {
+        currentSizeTab = 'upper';
+      } else if (activeClothes.lower) {
+        currentSizeTab = 'lower';
+      } else if (activeClothes.full) {
+        currentSizeTab = 'full';
+      }
+    }
+
+    // アクティブなタブを表示
+    document.querySelectorAll('.size-tab').forEach(tab => {
+      if (tab.dataset.category === currentSizeTab) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+
+    // スライダーの値を更新
+    updateSizeSliders();
   } else {
     sizeAdjustSection.style.display = 'none';
+  }
+}
+
+// スライダーの値を現在のタブに応じて更新
+function updateSizeSliders() {
+  if (activeClothes[currentSizeTab]) {
+    const widthPercent = Math.round(activeClothes[currentSizeTab].widthScale * 100);
+    const heightPercent = Math.round(activeClothes[currentSizeTab].heightScale * 100);
+
+    // 個別スライダーの値を更新
+    document.getElementById('width-scale').value = widthPercent;
+    document.getElementById('height-scale').value = heightPercent;
+    document.getElementById('width-value').textContent = widthPercent + '%';
+    document.getElementById('height-value').textContent = heightPercent + '%';
+
+    // 全体スケールスライダーの値も更新（横幅の値を使用）
+    document.getElementById('unified-scale').value = widthPercent;
+    document.getElementById('unified-value').textContent = widthPercent + '%';
   }
 }
 
