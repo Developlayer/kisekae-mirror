@@ -23,18 +23,18 @@ body {
 header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 8px 15px;
+  padding: 6px 12px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 header h1 {
-  font-size: 1.3rem;
-  margin-bottom: 2px;
+  font-size: 1.1rem;
+  margin-bottom: 1px;
 }
 
 header p {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   opacity: 0.9;
 }
 
@@ -42,8 +42,8 @@ header p {
 main {
   display: flex;
   flex: 1;
-  gap: 15px;
-  padding: 15px;
+  gap: 12px;
+  padding: 12px;
   overflow: hidden;
 }
 
@@ -105,11 +105,11 @@ main {
   color: #555;
 }
 
-/* ドラッグ&ドロップエリア */
+/* ファイル選択エリア */
 #drop-zone {
   border: 2px dashed #667eea;
   border-radius: 6px;
-  padding: 10px;
+  padding: 6px;
   text-align: center;
   transition: all 0.3s;
   cursor: pointer;
@@ -121,12 +121,6 @@ main {
   border-color: #764ba2;
 }
 
-#drop-zone p {
-  margin: 3px 0;
-  color: #666;
-  font-size: 0.75rem;
-}
-
 #file-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -136,6 +130,7 @@ main {
   cursor: pointer;
   font-size: 0.8rem;
   transition: transform 0.2s;
+  width: 100%;
 }
 
 #file-button:hover {
@@ -463,14 +458,14 @@ main {
 /* ステータス表示 */
 #status {
   background-color: #fff;
-  padding: 6px 15px;
+  padding: 4px 12px;
   text-align: center;
   border-top: 1px solid #ddd;
 }
 
 #status-text {
   color: #666;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 /* レスポンシブ対応（1440x900には不要だが念のため残す） */
