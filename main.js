@@ -126,7 +126,43 @@ function initializeEventListeners() {
     console.log('デバッグモード:', debugMode ? 'ON' : 'OFF');
   });
 
-  // サイズ調整スライダー
+  // 縦横比固定チェックボックス
+  document.getElementById('lock-aspect-ratio').addEventListener('change', (e) => {
+    const isLocked = e.target.checked;
+    const unifiedControl = document.getElementById('unified-scale-control');
+    const individualControls = document.getElementById('individual-scale-controls');
+
+    if (isLocked) {
+      // 縦横比固定モード：全体スケールを表示
+      unifiedControl.style.display = 'flex';
+      individualControls.style.display = 'none';
+      // 現在の横幅の値を全体スケールに適用
+      const currentScale = parseInt(document.getElementById('width-scale').value);
+      document.getElementById('unified-scale').value = currentScale;
+      document.getElementById('unified-value').textContent = currentScale + '%';
+    } else {
+      // 個別調整モード：横幅・縦幅を表示
+      unifiedControl.style.display = 'none';
+      individualControls.style.display = 'block';
+    }
+  });
+
+  // 全体スケールスライダー（縦横比固定時）
+  document.getElementById('unified-scale').addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    document.getElementById('unified-value').textContent = value + '%';
+    const scale = value / 100;
+    // 縦横両方に同じスケールを適用
+    updateActiveClothScale('width', scale);
+    updateActiveClothScale('height', scale);
+    // 個別スライダーの値も同期
+    document.getElementById('width-scale').value = value;
+    document.getElementById('height-scale').value = value;
+    document.getElementById('width-value').textContent = value + '%';
+    document.getElementById('height-value').textContent = value + '%';
+  });
+
+  // サイズ調整スライダー（個別調整時）
   document.getElementById('width-scale').addEventListener('input', (e) => {
     const value = parseInt(e.target.value);
     document.getElementById('width-value').textContent = value + '%';
@@ -140,10 +176,15 @@ function initializeEventListeners() {
   });
 
   document.getElementById('reset-size').addEventListener('click', () => {
+    // 全体スケールをリセット
+    document.getElementById('unified-scale').value = 100;
+    document.getElementById('unified-value').textContent = '100%';
+    // 個別スケールをリセット
     document.getElementById('width-scale').value = 100;
     document.getElementById('height-scale').value = 100;
     document.getElementById('width-value').textContent = '100%';
     document.getElementById('height-value').textContent = '100%';
+    // スケールを適用
     updateActiveClothScale('width', 1.0);
     updateActiveClothScale('height', 1.0);
   });
@@ -572,10 +613,16 @@ function updateClothesUI() {
         // サイズ調整スライダーの値を更新
         const widthPercent = Math.round(activeClothes[category].widthScale * 100);
         const heightPercent = Math.round(activeClothes[category].heightScale * 100);
+
+        // 個別スライダーの値を更新
         document.getElementById('width-scale').value = widthPercent;
         document.getElementById('height-scale').value = heightPercent;
         document.getElementById('width-value').textContent = widthPercent + '%';
         document.getElementById('height-value').textContent = heightPercent + '%';
+
+        // 全体スケールスライダーの値も更新（横幅の値を使用）
+        document.getElementById('unified-scale').value = widthPercent;
+        document.getElementById('unified-value').textContent = widthPercent + '%';
       }
     }
   });
