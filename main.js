@@ -10,6 +10,14 @@ let videoElement = null;
 let drawingUtils = null;
 let lastVideoTime = -1;
 
+// レターボックス用の変数（映像の描画領域）
+let videoDrawArea = {
+  x: 0,       // 描画開始X座標
+  y: 0,       // 描画開始Y座標
+  width: 0,   // 描画幅
+  height: 0   // 描画高さ
+};
+
 // 服のデータを保持
 const clothesData = {
   upper: [], // 上半身の服
@@ -796,10 +804,14 @@ async function initializeCamera() {
     return new Promise((resolve) => {
       videoElement.addEventListener('loadeddata', () => {
         console.log('カメラ映像取得成功');
+        console.log(`カメラ解像度: ${videoElement.videoWidth}x${videoElement.videoHeight}`);
 
-        // Canvasのサイズを設定
-        canvas.width = videoElement.videoWidth;
-        canvas.height = videoElement.videoHeight;
+        // Canvasのサイズを固定（4:3比率）
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // 映像の描画領域を計算（レターボックス対応）
+        calculateVideoDrawArea();
 
         // DrawingUtilsを初期化
         drawingUtils = new DrawingUtils(canvasCtx);
@@ -816,6 +828,35 @@ async function initializeCamera() {
   }
 }
 
+// 映像の描画領域を計算（アスペクト比を維持してレターボックス表示）
+function calculateVideoDrawArea() {
+  const canvasAspect = canvas.width / canvas.height;
+  const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+
+  if (videoAspect > canvasAspect) {
+    // 映像の方が横長 → 上下に黒帯（レターボックス）
+    videoDrawArea.width = canvas.width;
+    videoDrawArea.height = canvas.width / videoAspect;
+    videoDrawArea.x = 0;
+    videoDrawArea.y = (canvas.height - videoDrawArea.height) / 2;
+  } else if (videoAspect < canvasAspect) {
+    // 映像の方が縦長 → 左右に黒帯（ピラーボックス）
+    videoDrawArea.height = canvas.height;
+    videoDrawArea.width = canvas.height * videoAspect;
+    videoDrawArea.x = (canvas.width - videoDrawArea.width) / 2;
+    videoDrawArea.y = 0;
+  } else {
+    // 同じアスペクト比 → フルサイズ
+    videoDrawArea.x = 0;
+    videoDrawArea.y = 0;
+    videoDrawArea.width = canvas.width;
+    videoDrawArea.height = canvas.height;
+  }
+
+  console.log(`映像描画領域: x=${videoDrawArea.x}, y=${videoDrawArea.y}, ` +
+              `width=${videoDrawArea.width}, height=${videoDrawArea.height}`);
+}
+
 // 描画ループ
 function startDrawing() {
   async function drawFrame() {
@@ -826,9 +867,18 @@ function startDrawing() {
       if (lastVideoTime !== videoElement.currentTime) {
         lastVideoTime = videoElement.currentTime;
 
-        // カメラ映像を描画
-        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        canvasCtx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        // Canvas全体を黒でクリア（黒帯部分）
+        canvasCtx.fillStyle = '#000000';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // カメラ映像を描画（アスペクト比を維持）
+        canvasCtx.drawImage(
+          videoElement,
+          videoDrawArea.x,
+          videoDrawArea.y,
+          videoDrawArea.width,
+          videoDrawArea.height
+        );
 
         try {
           // MediaPipeで骨格検出
@@ -838,13 +888,16 @@ function startDrawing() {
           if (results.landmarks && results.landmarks.length > 0) {
             const landmarks = results.landmarks[0];
 
+            // ランドマーク座標をCanvas座標に変換
+            const transformedLandmarks = transformLandmarks(landmarks);
+
             // デバッグモードの場合のみ骨格を描画
             if (debugMode) {
-              drawSkeleton(landmarks);
+              drawSkeleton(transformedLandmarks);
             }
 
             // 服を描画
-            drawClothes(landmarks);
+            drawClothes(transformedLandmarks);
           }
         } catch (error) {
           console.error('骨格検出エラー:', error);
@@ -856,6 +909,24 @@ function startDrawing() {
   }
 
   drawFrame();
+}
+
+// ランドマーク座標を映像描画領域に合わせて変換
+function transformLandmarks(landmarks) {
+  return landmarks.map(landmark => ({
+    x: landmark.x,  // 0-1の正規化座標のまま保持
+    y: landmark.y,
+    z: landmark.z,
+    visibility: landmark.visibility
+  }));
+}
+
+// 正規化されたランドマーク座標をCanvas座標に変換するヘルパー関数
+function landmarkToCanvas(landmark) {
+  return {
+    x: videoDrawArea.x + landmark.x * videoDrawArea.width,
+    y: videoDrawArea.y + landmark.y * videoDrawArea.height
+  };
 }
 
 // 骨格の描画（デバッグ用）
@@ -879,9 +950,11 @@ function drawSkeleton(landmarks) {
     const endPoint = landmarks[end];
 
     if (startPoint && endPoint) {
+      const startPos = landmarkToCanvas(startPoint);
+      const endPos = landmarkToCanvas(endPoint);
       canvasCtx.beginPath();
-      canvasCtx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
-      canvasCtx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+      canvasCtx.moveTo(startPos.x, startPos.y);
+      canvasCtx.lineTo(endPos.x, endPos.y);
       canvasCtx.stroke();
     }
   });
@@ -890,14 +963,9 @@ function drawSkeleton(landmarks) {
   canvasCtx.fillStyle = '#FF0000';
   landmarks.forEach((landmark, index) => {
     if (landmark) {
+      const pos = landmarkToCanvas(landmark);
       canvasCtx.beginPath();
-      canvasCtx.arc(
-        landmark.x * canvas.width,
-        landmark.y * canvas.height,
-        3,
-        0,
-        2 * Math.PI
-      );
+      canvasCtx.arc(pos.x, pos.y, 3, 0, 2 * Math.PI);
       canvasCtx.fill();
     }
   });
@@ -922,12 +990,11 @@ function drawSkeleton(landmarks) {
   Object.entries(importantPoints).forEach(([index, label]) => {
     const landmark = landmarks[parseInt(index)];
     if (landmark) {
-      const x = landmark.x * canvas.width;
-      const y = landmark.y * canvas.height;
+      const pos = landmarkToCanvas(landmark);
       // 背景として黒い縁取り
-      canvasCtx.strokeText(label, x + 5, y - 5);
+      canvasCtx.strokeText(label, pos.x + 5, pos.y - 5);
       // 黄色のテキスト
-      canvasCtx.fillText(label, x + 5, y - 5);
+      canvasCtx.fillText(label, pos.x + 5, pos.y - 5);
     }
   });
 }
@@ -971,25 +1038,21 @@ function drawUpperBodyCloth(landmarks, clothItem) {
 
   if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) return;
 
-  // 肩の位置（ピクセル座標）
-  const leftShoulderX = leftShoulder.x * canvas.width;
-  const leftShoulderY = leftShoulder.y * canvas.height;
-  const rightShoulderX = rightShoulder.x * canvas.width;
-  const rightShoulderY = rightShoulder.y * canvas.height;
+  // 肩の位置（ピクセル座標）- videoDrawAreaを使用
+  const leftShoulderPos = landmarkToCanvas(leftShoulder);
+  const rightShoulderPos = landmarkToCanvas(rightShoulder);
 
-  // 腰の位置（ピクセル座標）
-  const leftHipX = leftHip.x * canvas.width;
-  const leftHipY = leftHip.y * canvas.height;
-  const rightHipX = rightHip.x * canvas.width;
-  const rightHipY = rightHip.y * canvas.height;
+  // 腰の位置（ピクセル座標）- videoDrawAreaを使用
+  const leftHipPos = landmarkToCanvas(leftHip);
+  const rightHipPos = landmarkToCanvas(rightHip);
 
   // 中心位置を計算
-  const shoulderCenterX = (leftShoulderX + rightShoulderX) / 2;
-  const shoulderCenterY = (leftShoulderY + rightShoulderY) / 2;
-  const hipCenterY = (leftHipY + rightHipY) / 2;
+  const shoulderCenterX = (leftShoulderPos.x + rightShoulderPos.x) / 2;
+  const shoulderCenterY = (leftShoulderPos.y + rightShoulderPos.y) / 2;
+  const hipCenterY = (leftHipPos.y + rightHipPos.y) / 2;
 
   // 肩幅を計算
-  const shoulderWidth = Math.abs(rightShoulderX - leftShoulderX);
+  const shoulderWidth = Math.abs(rightShoulderPos.x - leftShoulderPos.x);
 
   // 上半身の高さ（肩の中心から腰の中心まで）
   const bodyHeight = Math.abs(hipCenterY - shoulderCenterY);
@@ -1038,20 +1101,28 @@ function drawLowerBodyCloth(landmarks, clothItem) {
 
   if (!leftHip || !rightHip || !leftKnee || !rightKnee) return;
 
+  // 腰の位置（ピクセル座標）- videoDrawAreaを使用
+  const leftHipPos = landmarkToCanvas(leftHip);
+  const rightHipPos = landmarkToCanvas(rightHip);
+  const leftKneePos = landmarkToCanvas(leftKnee);
+  const rightKneePos = landmarkToCanvas(rightKnee);
+
   // 腰の中心点
-  const hipCenterX = (leftHip.x + rightHip.x) / 2 * canvas.width;
-  const hipCenterY = (leftHip.y + rightHip.y) / 2 * canvas.height;
+  const hipCenterX = (leftHipPos.x + rightHipPos.x) / 2;
+  const hipCenterY = (leftHipPos.y + rightHipPos.y) / 2;
 
   // 腰幅を計算
-  const hipWidth = Math.abs(rightHip.x - leftHip.x) * canvas.width;
+  const hipWidth = Math.abs(rightHipPos.x - leftHipPos.x);
 
   // 下半身の高さ（腰から足首まで）
   let lowerBodyHeight;
   if (leftAnkle && rightAnkle) {
-    const ankleCenterY = (leftAnkle.y + rightAnkle.y) / 2 * canvas.height;
+    const leftAnklePos = landmarkToCanvas(leftAnkle);
+    const rightAnklePos = landmarkToCanvas(rightAnkle);
+    const ankleCenterY = (leftAnklePos.y + rightAnklePos.y) / 2;
     lowerBodyHeight = Math.abs(ankleCenterY - hipCenterY);
   } else {
-    const kneeCenterY = (leftKnee.y + rightKnee.y) / 2 * canvas.height;
+    const kneeCenterY = (leftKneePos.y + rightKneePos.y) / 2;
     lowerBodyHeight = Math.abs(kneeCenterY - hipCenterY) * 2; // 膝までの2倍で推定
   }
 
@@ -1085,18 +1156,26 @@ function drawFullBodyCloth(landmarks, clothItem) {
 
   if (!leftShoulder || !rightShoulder || !leftAnkle || !rightAnkle) return;
 
+  // 各位置（ピクセル座標）- videoDrawAreaを使用
+  const leftShoulderPos = landmarkToCanvas(leftShoulder);
+  const rightShoulderPos = landmarkToCanvas(rightShoulder);
+  const leftHipPos = landmarkToCanvas(leftHip);
+  const rightHipPos = landmarkToCanvas(rightHip);
+  const leftAnklePos = landmarkToCanvas(leftAnkle);
+  const rightAnklePos = landmarkToCanvas(rightAnkle);
+
   // 中心点（肩の中心）
-  const shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2 * canvas.width;
-  const shoulderCenterY = (leftShoulder.y + rightShoulder.y) / 2 * canvas.height;
+  const shoulderCenterX = (leftShoulderPos.x + rightShoulderPos.x) / 2;
+  const shoulderCenterY = (leftShoulderPos.y + rightShoulderPos.y) / 2;
 
   // 腰の位置
-  const hipCenterY = (leftHip.y + rightHip.y) / 2 * canvas.height;
+  const hipCenterY = (leftHipPos.y + rightHipPos.y) / 2;
 
   // 肩幅を計算
-  const shoulderWidth = Math.abs(rightShoulder.x - leftShoulder.x) * canvas.width;
+  const shoulderWidth = Math.abs(rightShoulderPos.x - leftShoulderPos.x);
 
   // 全身の高さ（肩から足首まで）
-  const ankleCenterY = (leftAnkle.y + rightAnkle.y) / 2 * canvas.height;
+  const ankleCenterY = (leftAnklePos.y + rightAnklePos.y) / 2;
   const fullHeight = Math.abs(ankleCenterY - shoulderCenterY);
 
   // 上半身の高さを計算

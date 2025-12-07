@@ -756,3 +756,92 @@ git push
 - モバイル対応（レスポンシブデザインの強化）
 
 ---
+
+## 2025-12-07 - レターボックス対応（アスペクト比維持機能）
+
+### 目的
+4:3以外のアスペクト比を持つカメラ（16:9など）を使用した場合でも、映像を歪めずにレターボックス/ピラーボックス方式で表示する。
+
+### 技術的な背景
+- Canvas表示領域は800x600（4:3）で固定
+- カメラ入力のアスペクト比は様々（16:9、4:3、1:1など）
+- 従来：カメラ入力を無理やり4:3に引き伸ばして表示
+- 変更後：アスペクト比を維持し、余白は黒帯で表示
+
+### 実装内容
+
+#### 1. 映像描画領域の変数追加
+```javascript
+let videoDrawArea = {
+  x: 0,       // 描画開始X座標
+  y: 0,       // 描画開始Y座標
+  width: 0,   // 描画幅
+  height: 0   // 描画高さ
+};
+```
+
+#### 2. アスペクト比計算関数の追加
+```javascript
+function calculateVideoDrawArea() {
+  const canvasAspect = canvas.width / canvas.height;
+  const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+
+  if (videoAspect > canvasAspect) {
+    // 映像の方が横長 → 上下に黒帯（レターボックス）
+    videoDrawArea.width = canvas.width;
+    videoDrawArea.height = canvas.width / videoAspect;
+    videoDrawArea.x = 0;
+    videoDrawArea.y = (canvas.height - videoDrawArea.height) / 2;
+  } else if (videoAspect < canvasAspect) {
+    // 映像の方が縦長 → 左右に黒帯（ピラーボックス）
+    videoDrawArea.height = canvas.height;
+    videoDrawArea.width = canvas.height * videoAspect;
+    videoDrawArea.x = (canvas.width - videoDrawArea.width) / 2;
+    videoDrawArea.y = 0;
+  } else {
+    // 同じアスペクト比 → フルサイズ
+    videoDrawArea = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+  }
+}
+```
+
+#### 3. 座標変換ヘルパー関数
+```javascript
+function landmarkToCanvas(landmark) {
+  return {
+    x: videoDrawArea.x + landmark.x * videoDrawArea.width,
+    y: videoDrawArea.y + landmark.y * videoDrawArea.height
+  };
+}
+```
+
+#### 4. 描画ループの修正
+- Canvas全体を黒でクリア（黒帯部分）
+- 映像をvideoDrawAreaの位置・サイズで描画
+- 骨格検出座標をlandmarkToCanvas()で変換
+
+#### 5. 服描画関数の修正
+以下の関数で座標計算をvideoDrawAreaベースに変更：
+- `drawSkeleton()` - 骨格描画
+- `drawUpperBodyCloth()` - 上半身の服
+- `drawLowerBodyCloth()` - 下半身の服
+- `drawFullBodyCloth()` - 全身の服
+
+### 対応例
+
+**16:9カメラ（1280x720）の場合:**
+- Canvas: 800x600（4:3）
+- 映像描画領域: 800x450
+- 上下に75pxずつ黒帯
+
+**1:1カメラ（480x480）の場合:**
+- Canvas: 800x600（4:3）
+- 映像描画領域: 600x600
+- 左右に100pxずつ黒帯
+
+### 効果
+- ✅ どのアスペクト比のカメラでも映像が歪まない
+- ✅ 骨格検出・服の描画が正しい位置で動作
+- ✅ 表示領域は固定（800x600）で一貫したUI
+
+---
