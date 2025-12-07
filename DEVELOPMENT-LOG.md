@@ -844,4 +844,7 @@ function landmarkToCanvas(landmark) {
 - ✅ 骨格検出・服の描画が正しい位置で動作
 - ✅ 表示領域は固定（800x600）で一貫したUI
 
+### GitHubコミット
+- `95cb57e` - feat: レターボックス対応でカメラのアスペクト比を維持
+
 ---
